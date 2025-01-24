@@ -1,0 +1,22 @@
+services:
+  app:
+    build: .
+    volumes:
+      - dietlog_data:/root
+    ports:
+      - 8000:8000
+    develop:
+      watch:
+        - action: sync
+          path: ./app
+          target: /root/app
+        - action: rebuild
+          path: pyproject.toml
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+volumes:
+  dietlog_data:
