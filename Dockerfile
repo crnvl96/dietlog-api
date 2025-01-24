@@ -1,14 +1,17 @@
-FROM python:3.12-slim
+FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim
 
-WORKDIR /root
+ENV UV_COMPILE_BYTECODE=1
+ENV UV_LINK_MODE=copy
+WORKDIR /app
 
-# Install uv.
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+RUN --mount=type=cache,target=/root/.cache/uv \
+    --mount=type=bind,source=uv.lock,target=uv.lock \
+    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
+    uv sync --frozen --no-install-project
 
-COPY . /root
+ADD . /app
 
-RUN uv sync --frozen --no-cache
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen
 
-EXPOSE 8000
-
-ENTRYPOINT ["/root/.venv/bin/fastapi", "run", "/root/app/main.py", "--port", "8000", "--host", "0.0.0.0", "--reload"]
+ENV PATH="/app/.venv/bin:$PATH"

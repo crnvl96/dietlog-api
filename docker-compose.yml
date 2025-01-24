@@ -1,22 +1,29 @@
 services:
-  app:
-    build: .
+  dev:
+    build:
+      context: .
     volumes:
       - dietlog_data:/root
     ports:
       - 8000:8000
+    command: "fastapi dev --host 0.0.0.0 app/main.py"
     develop:
       watch:
         - action: sync
-          path: ./app
-          target: /root/app
+          path: .
+          target: /app
+          ignore:
+            - .venv/
         - action: rebuild
-          path: pyproject.toml
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    restart: unless-stopped
+          path: ./pyproject.toml
+  test:
+    build:
+      context: .
+    volumes:
+      - dietlog_test_data:/root
+    ports:
+      - 8001:8001
+    command: "pytest -v --capture=no --disable-warnings"
 volumes:
   dietlog_data:
+  dietlog_test_data:
