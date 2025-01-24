@@ -1,8 +1,6 @@
 from fastapi import FastAPI
 
+from .api.endpoints.diet import diet_router
+
 app = FastAPI()
-
-
-@app.get("/")
-async def read_root():
-    return {"Hello": "World"}
+app.include_router(diet_router)
