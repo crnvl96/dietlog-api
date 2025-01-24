@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Diet Process</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+      }
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      .spinner {
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #3498db;
+        border-radius: 50%;
+        width: 30px;
+        height: 30px;
+        animation: spin 1s linear infinite;
+        display: none;
+        margin: 10px auto;
+      }
+      button {
+        padding: 10px 20px;
+        font-size: 16px;
+        cursor: pointer;
+      }
+      #response {
+        margin-top: 20px;
+        padding: 10px;
+        background-color: #f0f0f0;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        white-space: pre-wrap;
+      }
+      .error {
+        color: #dc3545;
+        background-color: #f8d7da;
+        border: 1px solid #f5c6cb;
+        border-radius: 4px;
+        padding: 10px;
+        margin-bottom: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Diet Process</h1>
+    <div id="error" class="error" style="display: none;"></div>
+    <div>
+      <label for="imageUrl">Image URL:</label>
+      <input type="text" id="imageUrl" placeholder="Enter image URL" style="width: 300px; padding: 5px; margin-right: 10px;">
+      <button id="processButton">Process Diet</button>
+    </div>
+    <div id="response">Response will appear here...</div>
+    <div class="spinner" id="loadingSpinner"></div>
+
+    <script>
+      document
+        .getElementById("processButton")
+        .addEventListener("click", async () => {
+          const responseDiv = document.getElementById("response");
+          const imageUrl = document.getElementById("imageUrl").value;
+          
+          if (!imageUrl) {
+            responseDiv.textContent = "Please enter an image URL!";
+            return;
+          }
+
+          responseDiv.textContent = "";
+          const spinner = document.getElementById("loadingSpinner");
+          spinner.style.display = "block";
+
+          try {
+            // Make a POST request to the /diet/process endpoint
+            const response = await fetch("/diet/process", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                url: imageUrl
+              }),
+            });
+
+            if (!response.ok) {
+              const errorData = await response.json();
+              const errorDiv = document.getElementById("error");
+              errorDiv.textContent = `Error: ${errorData.detail}`;
+              errorDiv.style.display = "block";
+              responseDiv.textContent = "";
+              return;
+            }
+            
+            // Clear any previous error and hide spinner
+            document.getElementById("error").style.display = "none";
+            spinner.style.display = "none";
+
+            // Create a reader to read the streamed response
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+
+            // Clear the response div
+            responseDiv.textContent = "";
+
+            // Read the streamed response chunk by chunk
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+
+              // Decode the chunk and append it to the response div
+              const chunk = decoder.decode(value, { stream: true });
+              responseDiv.textContent += chunk;
+            }
+          } catch (error) {
+            spinner.style.display = "none";
+            responseDiv.textContent = `Error: ${error.message}`;
+          }
+        });
+    </script>
+  </body>
+</html>
