@@ -1,0 +1,120 @@
+<!doctype html>
+<html>
+
+<head>
+  <title>AI Chat</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+
+    #chat {
+      border: 1px solid #ccc;
+      padding: 10px;
+      height: 300px;
+      overflow-y: scroll;
+      margin-bottom: 10px;
+    }
+
+    #input {
+      display: flex;
+      gap: 10px;
+    }
+
+    #text {
+      flex: 1;
+      padding: 5px;
+    }
+
+    #image {
+      padding: 5px;
+    }
+
+    button {
+      padding: 5px 10px;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>AI Chat</h1>
+  <div id="chat"></div>
+  <div id="input">
+    <input type="text" id="text" placeholder="Type your message..." />
+    <input type="file" id="image" accept="image/*" />
+    <button onclick="sendMessage()">Send</button>
+  </div>
+
+  <script>
+    const chat = document.getElementById("chat");
+    const textInput = document.getElementById("text");
+    const imageInput = document.getElementById("image");
+
+    function addMessage(role, message) {
+      const messageElement = document.createElement("div");
+      messageElement.innerHTML = `<strong>${role}:</strong> ${message}`;
+      chat.appendChild(messageElement);
+      chat.scrollTop = chat.scrollHeight; // Auto-scroll to the bottom
+    }
+
+    async function sendMessage() {
+      const text = textInput.value;
+      const image = imageInput.files[0];
+
+      if (!text || !image) {
+        alert("Please enter text and select an image.");
+        return;
+      }
+
+      addMessage("You", text);
+
+      textInput.value = "";
+      imageInput.value = "";
+
+      const formData = new FormData();
+      formData.append("text", text);
+      formData.append("image", image);
+
+      try {
+        const response = await fetch("/diet/process", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!response.ok) {
+          throw new Error(`Error: ${response.statusText}`);
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let aiResponse = "";
+
+        while (true) {
+          const {done, value} = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value, {stream: true});
+          aiResponse += chunk;
+
+          const aiMessageElement = document.querySelector(
+            "#chat div:last-child",
+          );
+
+          if (
+            aiMessageElement &&
+            aiMessageElement.innerHTML.startsWith("<strong>AI:</strong>")
+          ) {
+            aiMessageElement.innerHTML = `<strong>AI:</strong> ${aiResponse}`;
+          } else {
+            addMessage("AI", aiResponse);
+          }
+        }
+      } catch (error) {
+        addMessage("Error", error.message);
+      }
+    }
+  </script>
+</body>
+
+</html>

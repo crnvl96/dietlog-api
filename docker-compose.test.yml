@@ -1,0 +1,12 @@
+services:
+  test:
+    build:
+      context: .
+    volumes:
+      - dietlog_test_data:/root
+    ports:
+      - 8001:8001
+    command: "pytest -v --capture=no --disable-warnings"
+
+volumes:
+  dietlog_test_data:
