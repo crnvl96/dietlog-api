@@ -1,12 +1,12 @@
 from functools import lru_cache
 
-from pydantic import Field
+from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    ANTHROPIC_API_KEY: str = Field(default="")
-    model_config = SettingsConfigDict(env_file=".env")  # pyright: ignore[reportUnannotatedClassAttribute]
+    ANTHROPIC_API_KEY: SecretStr = SecretStr(secret_value="")
+    model_config = SettingsConfigDict(env_file=".env")
 
 
 @lru_cache

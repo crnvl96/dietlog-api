@@ -8,9 +8,14 @@ dependencies = [
   "fastapi[standard]",
   "langchain>=0.3.15",
   "langchain-anthropic>=0.3.4",
+  "pillow>=11.1.0",
   "pydantic-settings>=2.7.1",
   "pytest>=8.3.4",
   "python-dotenv>=1.0.1",
+  "torch>=2.5.1",
+  "torchaudio>=2.5.1",
+  "torchvision>=0.20.1",
+  "transformers>=4.48.1",
 ]
 
 [tool.pytest.ini_options]
