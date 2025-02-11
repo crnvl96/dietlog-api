@@ -27,15 +27,20 @@ class ImageRequest(BaseModel):
 
 
 @diet_router.post("/process")
-async def process(image_request: Annotated[ImageRequest, Body(...)]) -> StreamingResponse:
+async def process(body: Annotated[ImageRequest, Body(...)]) -> StreamingResponse:
     """Process an image of food and generate nutritional feedback.
 
     This endpoint fetches an image from a URL, processes it to generate a description,
     and then streams nutritional feedback based on the description.
 
+    Important:
+        This endpoint cannot be tested using Swagger UI as it does not support streaming responses.
+        To test this functionality, please visit http://localhost:8000/static/index.html
+        and use the web interface provided there.
+
     Parameters
     ----------
-    image_request : ImageRequest
+    body : ImageRequest
         The request body containing the image URL to process.
 
     Returns
@@ -47,7 +52,7 @@ async def process(image_request: Annotated[ImageRequest, Body(...)]) -> Streamin
     llm: LLMService = LLMProvider().llm()
     img: ImageService = ImageProvider().img()
 
-    url = image_request.url
+    url = body.url
     bt = img.fetch_img_content(url)
     content = img.decode_img_bytes(bt)
     desc = await llm.get_image_description(content)
