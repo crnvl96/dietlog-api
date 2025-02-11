@@ -1,0 +1,25 @@
+# Ignore Python cache and virtualenv
+ __pycache__/
+ *.py[cod]
+ .python-version
+ venv/
+ env/
+ .venv/
+
+ # Ignore development and testing files
+ tests/
+ .coverage
+ .tox/
+ .pytest_cache/
+
+ # Ignore IDE files
+ .idea/
+ .vscode/
+
+ # Ignore git files
+ .git/
+ .gitignore
+
+ # Ignore local development files
+ *.env
+ *.env.local
