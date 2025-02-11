@@ -6,10 +6,11 @@ images of food and generating nutritional feedback using AI models.
 
 from typing import TYPE_CHECKING, Annotated
 
-from fastapi import APIRouter, Body
+from fastapi import APIRouter, Body, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
+from app.exceptions.image import ImageTooLargeError
 from app.providers.image import ImageProvider
 from app.providers.llm import LLMProvider
 
@@ -36,16 +37,32 @@ class ImageRequest(BaseModel):
 
     """
 
-    url: str = Body(
-        example="https://example.com/path/to/image.jpg",
-        description=(
-            "Public URL of the food image to analyze. Supported formats: JPEG, PNG. "
-            "Image should be clear and focused on the food item."
-        ),
-    )
+    url: str = Body()
 
 
-@diet_router.post("/process")
+@diet_router.post(
+    "/process",
+    responses={
+        200: {
+            "description": "Successful response with streaming nutritional feedback",
+            "content": {"text/event-stream": {"example": "This is a stream of nutritional feedback..."}},
+        },
+        400: {
+            "description": "Bad Request - Image exceeds size limit",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Image too large. Maximum allowed size: 4194304 bytes, actual size: 5242880 bytes"
+                    }
+                }
+            },
+        },
+        500: {
+            "description": "Internal Server Error",
+            "content": {"application/json": {"example": {"detail": "Internal server error occurred"}}},
+        },
+    },
+)
 async def process(body: Annotated[ImageRequest, Body(...)]) -> StreamingResponse:
     """Process an image of food and generate nutritional feedback.
 
@@ -63,8 +80,15 @@ async def process(body: Annotated[ImageRequest, Body(...)]) -> StreamingResponse
     img: ImageService = ImageProvider().img()
 
     url = body.url
-    bt = img.fetch_img_content(url)
-    content = img.decode_img_bytes(bt)
-    desc = await llm.get_image_description(content)
-
-    return await llm.stream_nutritional_feedback(desc)
+    try:
+        bt = img.fetch_img_content(url)
+        content = img.decode_img_bytes(bt)
+        desc = await llm.get_image_description(content)
+        return await llm.stream_nutritional_feedback(desc)
+    except ImageTooLargeError as e:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Image too large. Maximum allowed size: {e.max_size} bytes, actual size: {e.actual_size} bytes",
+        ) from e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Internal server error occurred: {e!s}") from e
