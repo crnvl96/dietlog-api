@@ -1,26 +1,27 @@
 [project]
 name = "dietlog-api"
 version = "0.1.0"
-description = "Add your description here"
-readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-  "fastapi[standard]",
-  "langchain>=0.3.15",
-  "langchain-anthropic>=0.3.4",
-  "pillow>=11.1.0",
-  "pydantic-settings>=2.7.1",
-  "pytest>=8.3.4",
+  "anthropic>=0.45.2",
+  "fastapi[standard]>=0.115.8",
+  "httpx>=0.28.1",
   "python-dotenv>=1.0.1",
-  "torch>=2.5.1",
-  "torchaudio>=2.5.1",
-  "torchvision>=0.20.1",
-  "transformers>=4.48.1",
 ]
 
-[tool.pytest.ini_options]
-addopts = "-v"
-testpaths = ["app/tests"]
-python_files = "test_*.py"
-python_classes = "Test*"
-python_functions = "test_*"
+[tool.pyright]
+reportMissingTypeStubs = false
+allowedUntypedLibraries = []
+typeCheckingMode = "recommended"
+
+[tool.ruff]
+line-length = 120
+indent-width = 4
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+  "D",
+  "COM812", # https://docs.astral.sh/ruff/rules/missing-trailing-comma/
+]

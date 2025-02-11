@@ -1,112 +1,137 @@
-import io
-from typing import Annotated, cast
+import base64
+from collections.abc import AsyncGenerator
 
-from fastapi import APIRouter, Depends, Form, HTTPException, UploadFile
-from langchain_anthropic import ChatAnthropic
-from langchain_core.prompts import PromptTemplate
-from PIL import Image
-from pydantic import BaseModel, Field
-from transformers import BlipForConditionalGeneration, BlipProcessor
-
-from app.config.settings import Settings, load_env
+import httpx
+from anthropic import AsyncAnthropic
+from fastapi import APIRouter
+from fastapi.responses import StreamingResponse
 
 diet_router = APIRouter(prefix="/diet")
+client = AsyncAnthropic()
 
 
-class DietItem(BaseModel):
-    item: str = Field(description="Name of the desired item.")
-    present: str = Field(
-        description="Presence of the desired item in the picture sent."
+def get_image() -> str:
+    image1_url = "https://upload.wikimedia.org/wikipedia/commons/thumb/6/62/NCI_Visuals_Food_Hamburger.jpg/230px-NCI_Visuals_Food_Hamburger.jpg"
+    return base64.standard_b64encode(httpx.get(image1_url).content).decode("utf-8")
+
+
+async def get_image_description(image_data: str) -> str:
+    response = await client.messages.create(
+        model="claude-3-5-sonnet-latest",
+        max_tokens=480,
+        messages=[
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "image",
+                        "source": {
+                            "type": "base64",
+                            "media_type": "image/jpeg",
+                            "data": image_data,
+                        },
+                    },
+                    {
+                        "type": "text",
+                        "text": "Describe the food in this image in detail, including all visible components and preparation methods.",
+                    },
+                ],
+            }
+        ],
     )
-    score: int = Field(
-        description="Representation of how close the item in the picture is from the desired item."
-    )
-    note: str = Field(description="Quick explanation about the item score")
-
-
-class DietReport(BaseModel):
-    evaluation: list[DietItem] = Field(description="Diet items to be evaluated.")
-    final_score: int = Field(
-        description="Overall representation about how good is the current meal based on the target diet."
-    )
-    general_note: str = Field(
-        description="Quick explanation about the meal final_score"
-    )
-
-
-async def process_image(image: UploadFile) -> str:
-    try:
-        img = Image.open(io.BytesIO(await image.read())).convert("RGB")
-
-        processor: BlipProcessor = cast(
-            BlipProcessor,
-            BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-base"),
-        )
-
-        model = BlipForConditionalGeneration.from_pretrained(
-            "Salesforce/blip-image-captioning-base"
-        )
-
-        inputs = processor(img, return_tensors="pt")
-        out = model.generate(**inputs, interpolate_pos_encoding=False)
-        description = processor.decode(out[0], skip_special_tokens=True)
-
-        print(description)
-
-        return description
-
-    except Exception as e:
-        raise ValueError(f"Error processing image: {e}")
+    return response.content[0].text
 
 
 @diet_router.post("/process")
-async def process(
-    text: Annotated[str, Form()],
-    image: UploadFile,
-    settings: Annotated[Settings, Depends(load_env)],
-):
-    try:
-        image_description = await process_image(image)
+async def process() -> StreamingResponse:
+    async def generate() -> AsyncGenerator[str, None]:
+        image_data = get_image()
+        image_description = await get_image_description(image_data)
 
-        llm = ChatAnthropic(
-            api_key=settings.ANTHROPIC_API_KEY,
-            model_name="claude-3-5-haiku-latest",
-            streaming=True,
-            timeout=None,
-            stop=None,
-        )
+        prompt_template = """
+        You are an AI nutritionist with extensive knowledge of food, nutrition, and health.
+        Your task is to analyze food descriptions and provide comprehensive, health-focused feedback.
 
-        structured_llm = llm.with_structured_output(DietReport)
+        Here's the description of the food you need to analyze:
 
-        print(text)
+        <image_description>
+        {{IMAGE_DESCRIPTION}}
+        </image_description>
 
-        prompt = PromptTemplate(
-            input_variables=["text", "image_description"],
-            template="""
-              You are a nutritionist, specializing in food evaluation. You are really good at analyzing food descriptions
-            and understanding the nutritional values of each ingredient present. I will send you a description of a meal,
-            and your task is to evaluate each ingredient and provide feedback about it.
-            The feedback should focus on how close the current ingredient is to what should be in a healthy meal.
-            For example:
-            - If there is meat in the meal, but it is fatty, you should point that out.
-            - If there is rice, it is good, but it could be substituted for integral rice.
-            - If there is no salad, you should suggest adding at least a little.
-            - If there is something fried, it is not good; it could be substituted with something baked.
-            Summarize each feedback with a score from 1 to 100.
-            After evaluating each ingredient, provide a general evaluation of the dish. This should be a quick summary of your thoughts.
-            Also, provide an overall score for the entire meal.
+        Your analysis should follow these steps:
 
-            Below is the meal description you must evaluate:
+        1. Carefully read and understand the food description.
+        2. Identify all food components and their preparation methods.
+        3. Analyze the nutritional value of the meal, considering:
+           a. Nutritional balance (proteins, carbohydrates, fats, vitamins, and minerals)
+           b. Portion sizes
+           c. Cooking methods (e.g., fried, baked, grilled, raw)
+           d. Presence of processed vs. whole foods
+           e. Estimated calorie density
+           f. Fiber content
+           g. Presence of added sugars or unhealthy fats
+        4. Assess the overall healthiness of the meal.
+        5. Determine a health score on a scale of 1 to 10 (1 being extremely unhealthy, 10 being very healthy).
+        6. Provide reasoning for your score.
+        7. Offer constructive feedback and suggestions for improvement.
 
-            {image_description}
-            """,
-        )
+        Before providing your final assessment, break down your thought process inside <nutritional_breakdown> tags.
+        This will ensure a thorough interpretation of the food description. Include the following steps:
 
-        chain = prompt | structured_llm
+        1. List all food components and preparation methods
+        2. Evaluate each component's nutritional value
+        3. Assess cooking methods and their health implications
+        4. Estimate overall nutritional balance and calorie density
+        5. Consider portion sizes
+        6. Identify any concerning ingredients (e.g., added sugars, unhealthy fats)
 
-        response = chain.invoke({"image_description": image_description})
+        It's OK for this section to be quite long.
 
-        return response
+        Your final output should be structured as follows:
 
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        <nutritional_breakdown>
+        [Detailed breakdown of the meal components and their health implications, following the steps above]
+        </nutritional_breakdown>
+
+        <reasoning>
+        [Explanation of how you arrived at the health score]
+        </reasoning>
+
+        <score>
+        [Health score between 1 and 10]
+        </score>
+
+        <feedback>
+        [Constructive feedback about the meal's healthiness and specific suggestions for improvement]
+        </feedback>
+
+        Remember to:
+        - Be objective and base your assessment solely on the information provided in the image description.
+        - Consider both positive and negative health aspects of each food item and preparation method.
+        - Provide specific, actionable suggestions for improving the nutritional value of the meal.
+        - Explain your reasoning clearly, using your expertise as a nutritionist.
+
+        Now, please proceed with your analysis of the described food.
+        """
+
+        prompt = prompt_template.replace("{{IMAGE_DESCRIPTION}}", image_description)
+
+        async with client.messages.stream(
+            max_tokens=1024,
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": prompt,
+                        },
+                    ],
+                }
+            ],
+            model="claude-3-5-sonnet-latest",
+        ) as stream:
+            async for text in stream.text_stream:
+                yield f"{text}"
+
+    return StreamingResponse(generate(), media_type="text/event-stream")

@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Diet Process</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+      }
+      button {
+        padding: 10px 20px;
+        font-size: 16px;
+        cursor: pointer;
+      }
+      #response {
+        margin-top: 20px;
+        padding: 10px;
+        background-color: #f0f0f0;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        white-space: pre-wrap;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Diet Process</h1>
+    <button id="processButton">Process Diet</button>
+    <div id="response">Response will appear here...</div>
+
+    <script>
+      document
+        .getElementById("processButton")
+        .addEventListener("click", async () => {
+          const responseDiv = document.getElementById("response");
+          responseDiv.textContent = "Processing...";
+
+          try {
+            // Make a POST request to the /diet/process endpoint
+            const response = await fetch("/diet/process", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+            });
+
+            if (!response.ok) {
+              throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+
+            // Create a reader to read the streamed response
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+
+            // Clear the response div
+            responseDiv.textContent = "";
+
+            // Read the streamed response chunk by chunk
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+
+              // Decode the chunk and append it to the response div
+              const chunk = decoder.decode(value, { stream: true });
+              responseDiv.textContent += chunk;
+            }
+          } catch (error) {
+            responseDiv.textContent = `Error: ${error.message}`;
+          }
+        });
+    </script>
+  </body>
+</html>
