@@ -25,6 +25,7 @@ class DietLogApp:
         The name of the folder containing static files.
     app : FastAPI
         The FastAPI application instance.
+
     """
 
     def __init__(self) -> None:
@@ -72,6 +73,7 @@ class DietLogApp:
         -------
         FastAPI
             The fully configured FastAPI application instance ready for use.
+
         """
         self._load_env()
         self._setup_routes()

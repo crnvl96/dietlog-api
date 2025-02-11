@@ -22,6 +22,7 @@ target-version = "py312"
 [tool.ruff.lint]
 select = ["ALL"]
 ignore = [
-  "D",
   "COM812", # https://docs.astral.sh/ruff/rules/missing-trailing-comma/
+  "D203",
+  "D213",
 ]
