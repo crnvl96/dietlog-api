@@ -22,10 +22,19 @@
         border-radius: 5px;
         white-space: pre-wrap;
       }
+      .error {
+        color: #dc3545;
+        background-color: #f8d7da;
+        border: 1px solid #f5c6cb;
+        border-radius: 4px;
+        padding: 10px;
+        margin-bottom: 20px;
+      }
     </style>
   </head>
   <body>
     <h1>Diet Process</h1>
+    <div id="error" class="error" style="display: none;"></div>
     <div>
       <label for="imageUrl">Image URL:</label>
       <input type="text" id="imageUrl" placeholder="Enter image URL" style="width: 300px; padding: 5px; margin-right: 10px;">
@@ -60,8 +69,16 @@
             });
 
             if (!response.ok) {
-              throw new Error(`HTTP error! Status: ${response.status}`);
+              const errorData = await response.json();
+              const errorDiv = document.getElementById("error");
+              errorDiv.textContent = `Error: ${errorData.detail}`;
+              errorDiv.style.display = "block";
+              responseDiv.textContent = "";
+              return;
             }
+            
+            // Clear any previous error
+            document.getElementById("error").style.display = "none";
 
             // Create a reader to read the streamed response
             const reader = response.body.getReader();
