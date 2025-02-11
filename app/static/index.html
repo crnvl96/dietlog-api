@@ -26,7 +26,11 @@
   </head>
   <body>
     <h1>Diet Process</h1>
-    <button id="processButton">Process Diet</button>
+    <div>
+      <label for="imageUrl">Image URL:</label>
+      <input type="text" id="imageUrl" placeholder="Enter image URL" style="width: 300px; padding: 5px; margin-right: 10px;">
+      <button id="processButton">Process Diet</button>
+    </div>
     <div id="response">Response will appear here...</div>
 
     <script>
@@ -34,6 +38,13 @@
         .getElementById("processButton")
         .addEventListener("click", async () => {
           const responseDiv = document.getElementById("response");
+          const imageUrl = document.getElementById("imageUrl").value;
+          
+          if (!imageUrl) {
+            responseDiv.textContent = "Please enter an image URL!";
+            return;
+          }
+
           responseDiv.textContent = "Processing...";
 
           try {
@@ -43,6 +54,9 @@
               headers: {
                 "Content-Type": "application/json",
               },
+              body: JSON.stringify({
+                url: imageUrl
+              }),
             });
 
             if (!response.ok) {
