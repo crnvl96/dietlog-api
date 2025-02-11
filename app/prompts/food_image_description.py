@@ -1,3 +1,22 @@
+"""Prompt template for generating detailed descriptions of food images.
+
+This module contains a prompt template designed for an AI assistant to analyze food images
+and provide structured descriptions. The prompt guides the AI to focus on specific aspects
+of the dish, such as appearance, ingredients, cooking methods, and presentation, while
+avoiding assumptions about unclear elements.
+
+The prompt emphasizes accuracy and descriptive language, ensuring the AI provides honest
+and detailed observations without making unfounded guesses.
+
+Attributes
+----------
+prompt : str
+    A detailed prompt template instructing the AI on how to analyze and describe food images.
+    The template includes guidelines for describing identifiable ingredients, uncertain elements,
+    cooking methods, presentation, and additional observations. It also provides a structured
+    format for the AI's response.
+"""
+
 prompt = """
     You are an AI assistant tasked with analyzing a food image and providing a detailed description of
     the meal and its ingredients. Your goal is to accurately describe what you can see in the image

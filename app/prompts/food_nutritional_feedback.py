@@ -1,3 +1,14 @@
+"""Prompt template for generating nutritional feedback based on food descriptions.
+
+This module contains a prompt template designed for an AI nutritionist to analyze food descriptions
+and provide comprehensive, health-focused feedback. The prompt guides the AI through a structured
+analysis process, including identifying food components, evaluating nutritional value, assessing
+cooking methods, and providing actionable suggestions for improvement.
+
+The output is structured into sections such as nutritional breakdown, reasoning, health score,
+and feedback, ensuring a thorough and actionable analysis.
+"""
+
 prompt = """
     You are an AI nutritionist with extensive knowledge of food, nutrition, and health.
     Your task is to analyze food descriptions and provide comprehensive, health-focused feedback.
