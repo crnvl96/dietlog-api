@@ -34,7 +34,7 @@ class DietLogApp:
         Sets up the static folder path and creates a new FastAPI application instance.
         """
         self.static_folder: str = "static"
-        self.app: FastAPI = FastAPI(openapi_url=None)
+        self.app: FastAPI = FastAPI()
 
     def _load_env(self) -> None:
         """Load environment variables from .env file.

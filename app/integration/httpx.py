@@ -7,8 +7,9 @@ to fetch image content from URLs and decode it into base64-encoded strings.
 import base64
 from typing import override
 
-import httpx
+from httpx import Client, Headers, Response
 
+from app.exceptions.image import ImageTooLargeError
 from app.interfaces.image import ImageService
 
 
@@ -40,8 +41,33 @@ class HTTPXService(ImageService):
         bytes
             The raw image content as bytes.
 
+        Raises
+        ------
+        ImageTooLargeError
+            If the image size exceeds the maximum allowed size (5MB).
+        httpx.HTTPError
+            If there's an error during the HTTP request.
+
         """
-        return httpx.get(url).content
+        max_size: int = 4 * 1024 * 1024  # 4MB
+
+        with Client() as client:
+            head_response: Response = client.head(url)
+            headers: Headers = head_response.headers
+            length: str = headers.get("Content-Length", 0)
+            content_length = int(length)
+
+            if content_length > max_size:
+                raise ImageTooLargeError(max_size, content_length)
+
+            response = client.get(url)
+            _ = response.raise_for_status()
+
+            content = response.content
+            if len(content) > max_size:
+                raise ImageTooLargeError(max_size, len(content))
+
+            return content
 
     @override
     def decode_img_bytes(self, content: bytes) -> str:
