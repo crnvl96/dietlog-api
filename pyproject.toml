@@ -10,7 +10,7 @@ dependencies = [
 ]
 
 [tool.pyright]
-reportMissingTypeStubs = false
+reportMissingTypeStubs = true
 allowedUntypedLibraries = []
 typeCheckingMode = "recommended"
 

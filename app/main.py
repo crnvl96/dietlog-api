@@ -7,15 +7,27 @@ from fastapi.staticfiles import StaticFiles
 from .api.diet import diet_router
 
 
-def create_app() -> FastAPI:
-    _ = load_dotenv()
+class DietLogApp:
+    def __init__(self) -> None:
+        self.static_folder: str = "static"
+        self.app: FastAPI = FastAPI()
 
-    app = FastAPI()
-    app.include_router(diet_router)
+    def _load_env(self) -> None:
+        _ = load_dotenv()
 
-    static_path = Path(__file__).parent / "static"
-    app.mount("/static", StaticFiles(directory=static_path), name="static")
-    return app
+    def _setup_routes(self) -> None:
+        self.app.include_router(diet_router)
+
+    def _setup_static_files(self) -> None:
+        static_path: Path = Path(__file__).parent / self.static_folder
+        self.app.mount(f"/{self.static_folder}", StaticFiles(directory=static_path), name=self.static_folder)
+
+    def bootstrap(self) -> FastAPI:
+        self._load_env()
+        self._setup_routes()
+        self._setup_static_files()
+
+        return self.app
 
 
-app = create_app()
+app = DietLogApp().bootstrap()
