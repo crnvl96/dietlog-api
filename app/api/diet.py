@@ -48,7 +48,8 @@ async def process(image_request: Annotated[ImageRequest, Body(...)]) -> Streamin
     img: ImageService = ImageProvider().img()
 
     url = image_request.url
-    content = img.decode_img_bytes(img.fetch_img_content(url))
+    bt = img.fetch_img_content(url)
+    content = img.decode_img_bytes(bt)
     desc = await llm.get_image_description(content)
 
     return await llm.stream_nutritional_feedback(desc)
