@@ -25,4 +25,5 @@ ignore = [
   "COM812", # https://docs.astral.sh/ruff/rules/missing-trailing-comma/
   "D203",
   "D213",
+  "E501",
 ]

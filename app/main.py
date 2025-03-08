@@ -8,6 +8,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from .api.diet import diet_router
@@ -78,6 +79,15 @@ class DietLogApp:
         self._load_env()
         self._setup_routes()
         self._setup_static_files()
+
+        # TODO: refact this cors handler
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=["*"],
+            allow_credentials=True,
+            allow_methods=["POST"],
+            allow_headers=["*"],  # Allow all headers
+        )
 
         return self.app
 
