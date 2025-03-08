@@ -85,8 +85,8 @@ class DietLogApp:
             CORSMiddleware,
             allow_origins=["*"],
             allow_credentials=True,
-            allow_methods=["POST"],
-            allow_headers=["*"],  # Allow all headers
+            allow_methods=["POST", "OPTIONS"],
+            allow_headers=["*"],
         )
 
         return self.app
