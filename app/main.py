@@ -81,7 +81,7 @@ class DietLogApp:
         self._setup_static_files()
 
         # TODO: refact this cors handler
-        app.add_middleware(
+        self.app.add_middleware(
             CORSMiddleware,
             allow_origins=["*"],
             allow_credentials=True,
