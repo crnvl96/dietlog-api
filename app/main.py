@@ -80,7 +80,6 @@ class DietLogApp:
         self._setup_routes()
         self._setup_static_files()
 
-        # TODO: refact this cors handler
         self.app.add_middleware(
             CORSMiddleware,
             allow_origins=["*"],
